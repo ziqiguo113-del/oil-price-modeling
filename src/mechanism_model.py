@@ -63,3 +63,81 @@ print(oil[[
     "oil_change",
     "theoretical_adjustment"
 ]].tail(10))
+# read domestic adjustment data
+domestic = pd.read_csv(
+    "data/domestic_adjustment.csv"
+)
+
+# convert date
+domestic["date"] = pd.to_datetime(
+    domestic["date"]
+)
+
+# merge
+merged = pd.merge(
+    domestic,
+    oil[[
+        "date",
+        "oil_change",
+        "theoretical_adjustment"
+    ]],
+    on="date",
+    how="left"
+)
+
+print("\n====================\n")
+
+print(merged)
+merged.to_csv(
+    "data/merged_result.csv",
+    index=False
+)
+# read processed oil data
+oil = pd.read_csv(
+    "data/processed/processed_brent.csv"
+)
+
+# convert date
+oil["date"] = pd.to_datetime(
+    oil["date"]
+)
+
+# calculate theoretical adjustment
+k = 10000
+
+oil["theoretical_adjustment"] = (
+    oil["oil_change"] * k
+)
+
+# read domestic adjustment
+domestic = pd.read_csv(
+    "data/domestic_adjustment.csv"
+)
+
+# convert date
+domestic["date"] = pd.to_datetime(
+    domestic["date"]
+)
+
+# merge
+merged = pd.merge(
+    domestic,
+    oil[[
+        "date",
+        "oil_change",
+        "theoretical_adjustment",
+        "price"
+    ]],
+    on="date",
+    how="left"
+)
+
+# save merged result
+merged.to_csv(
+    "data/merged_result.csv",
+    index=False
+)
+
+print("\nmerge complete\n")
+
+print(merged.head())
