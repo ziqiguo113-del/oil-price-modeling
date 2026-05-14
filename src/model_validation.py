@@ -1,61 +1,53 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import mean_squared_error
-
-# read data
+# read result
 df = pd.read_csv(
     "merged_result.csv"
 )
 
-# input and output
-X = df[["theoretical_adjustment"]]
-
-y = df["actual_adjustment"]
-
-# build model
-model = LinearRegression()
-
-model.fit(X, y)
-
-# prediction
-pred = model.predict(X)
-
-# evaluation
-mae = mean_absolute_error(y, pred)
-
-rmse = np.sqrt(
-    mean_squared_error(y, pred)
+# convert date
+df["date"] = pd.to_datetime(
+    df["date"]
 )
-
-print("\n===== model validation =====\n")
-
-print("MAE:", mae)
-
-print("RMSE:", rmse)
 
 # plot
+plt.figure(figsize=(14,6))
+
 plt.plot(
-    y.values,
-    label="Actual"
+    df["date"],
+    df["actual_adjustment"],
+    marker="o",
+    label="actual"
 )
 
 plt.plot(
-    pred,
-    label="Predicted"
+    df["date"],
+    df["theoretical_adjustment"],
+    marker="s",
+    label="theoretical"
 )
+
+plt.title(
+    "Actual vs Theoretical Adjustment"
+)
+
+plt.xlabel("Date")
+
+plt.ylabel("Adjustment")
 
 plt.legend()
 
-plt.title(
-    "Actual vs Predicted Adjustment"
-)
+plt.grid(True)
+
+# rotate dates
+plt.xticks(rotation=45)
+
+# save
 plt.savefig(
-    "figures/prediction_vs_actual.png",
+    "output/adjustment_compare.png",
     dpi=300,
     bbox_inches="tight"
 )
+
 plt.show()
