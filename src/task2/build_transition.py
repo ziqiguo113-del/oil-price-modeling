@@ -92,4 +92,3 @@ np.savetxt(
     P,
     delimiter=","
 )
-print(df["oil_change"].head(20))
