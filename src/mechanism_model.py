@@ -1,143 +1,153 @@
 import pandas as pd
+import numpy as np
 
-# read oil price data
-oil = pd.read_csv("data/raw/brent_oil.csv")
+# ======================
+# 1. read oil data
+# ======================
 
-# rename columns
-oil.columns = [
-    "date",
-    "price",
-    "open",
-    "high",
-    "low",
-    "volume",
-    "change_percent"
-]
-
-# convert date
-oil["date"] = pd.to_datetime(oil["date"])
-
-# sort by date
-oil = oil.sort_values("date")
-
-# convert price to float
-oil["price"] = (
-    oil["price"]
-    .astype(str)
-    .str.replace(",", "")
-    .astype(float)
-)
-
-# calculate 10-day moving average
-oil["ma10"] = (
-    oil["price"]
-    .rolling(10)
-    .mean()
-)
-
-# calculate 10-day change
-oil["oil_change"] = (
-    oil["ma10"]
-    .pct_change()
-)
-
-print(oil[[
-    "date",
-    "price",
-    "ma10",
-    "oil_change"
-]].tail(20))
-# simulate theoretical adjustment
-# assume transmission coefficient
-
-k = 10000
-
-oil["theoretical_adjustment"] = (
-    oil["oil_change"] * k
-)
-
-print("\n====================\n")
-
-print(oil[[
-    "date",
-    "oil_change",
-    "theoretical_adjustment"
-]].tail(10))
-# read domestic adjustment data
-domestic = pd.read_csv(
-    "data/domestic_adjustment.csv"
-)
-
-# convert date
-domestic["date"] = pd.to_datetime(
-    domestic["date"]
-)
-
-# merge
-merged = pd.merge(
-    domestic,
-    oil[[
-        "date",
-        "oil_change",
-        "theoretical_adjustment"
-    ]],
-    on="date",
-    how="left"
-)
-
-print("\n====================\n")
-
-print(merged)
-merged.to_csv(
-    "data/merged_result.csv",
-    index=False
-)
-# read processed oil data
-oil = pd.read_csv(
+df = pd.read_csv(
     "data/processed/processed_brent.csv"
 )
 
 # convert date
-oil["date"] = pd.to_datetime(
-    oil["date"]
+df["date"] = pd.to_datetime(df["date"])
+
+# ======================
+# 2. calculate 10-day average
+# ======================
+
+df["avg10"] = (
+    df["price"]
+    .rolling(10)
+    .mean()
 )
 
-# calculate theoretical adjustment
-k = 10000
+# ======================
+# 3. read adjustment dates
+# ======================
 
-oil["theoretical_adjustment"] = (
-    oil["oil_change"] * k
-)
-
-# read domestic adjustment
-domestic = pd.read_csv(
+adj = pd.read_csv(
     "data/domestic_adjustment.csv"
 )
 
-# convert date
-domestic["date"] = pd.to_datetime(
-    domestic["date"]
+adj["date"] = pd.to_datetime(
+    adj["date"]
+)
+adj = adj.sort_values(
+    "date"
 )
 
-# merge
-merged = pd.merge(
-    domestic,
-    oil[[
-        "date",
-        "oil_change",
-        "theoretical_adjustment",
-        "price"
-    ]],
-    on="date",
-    how="left"
+adj = adj.reset_index(
+    drop=True
 )
 
-# save merged result
-merged.to_csv(
-    "data/merged_result.csv",
+# ======================
+# 4. match adjustment windows
+# ======================
+
+result = []
+
+# carry mechanism
+carry = 0
+
+# calibration coefficient
+# 后面还能再调
+k = 120
+
+for i in range(1, len(adj)):
+
+    current_date = adj.loc[i, "date"]
+
+    previous_date = adj.loc[i - 1, "date"]
+
+    current_window = df[
+        (df["date"] > previous_date)
+        &
+        (df["date"] <= current_date)
+    ]
+
+    current_avg = (
+        current_window["price"]
+        .mean()
+    )
+
+# 上一期窗口
+    if i >= 2:
+
+        earlier_date = adj.loc[
+            i - 2,
+            "date"
+        ]
+
+        previous_window = df[
+            (df["date"] > earlier_date)
+            &
+            (df["date"] <= previous_date)
+        ]
+
+        previous_avg = (
+            previous_window["price"]
+            .mean()
+        )
+
+    else:
+
+        previous_avg = current_avg
+
+    # oil price absolute change
+    delta_price = (
+        current_avg - previous_avg
+    )
+    # theoretical adjustment
+    raw_adjustment = (
+        delta_price * k
+    )
+
+    # add carry
+    raw_adjustment += carry
+
+    # 50 yuan threshold
+    if abs(raw_adjustment) < 50:
+
+        actual_theory = 0
+
+        carry = raw_adjustment
+
+    else:
+
+        actual_theory = raw_adjustment
+
+        carry = 0
+
+    result.append({
+
+        "date": current_date,
+
+        "price": current_avg,
+
+        "oil_change": delta_price,
+
+        "theoretical_adjustment":
+            actual_theory,
+
+        "actual_adjustment":
+            adj.loc[i,
+            "actual_adjustment"]
+    })
+
+# ======================
+# 5. save result
+# ======================
+
+result_df = pd.DataFrame(result)
+
+result_df.to_csv(
+
+    "merged_result.csv",
+
     index=False
 )
 
-print("\nmerge complete\n")
+print("\n===== mechanism model complete =====\n")
 
-print(merged.head())
+print(result_df.head())

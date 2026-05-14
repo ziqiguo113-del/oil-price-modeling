@@ -8,11 +8,11 @@ from sklearn.metrics import mean_squared_error
 
 # read data
 df = pd.read_csv(
-    "data/processed/final_data.csv"
+    "merged_result.csv"
 )
 
 # input and output
-X = df[["oil_change"]]
+X = df[["theoretical_adjustment"]]
 
 y = df["actual_adjustment"]
 
