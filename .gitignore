@@ -13,9 +13,6 @@ venv/
 # VS Code
 .vscode/
 
-# 输出图（建议保留代码但不强制上传图）
-figures/*.png
-
 # 日志
 *.log
 
