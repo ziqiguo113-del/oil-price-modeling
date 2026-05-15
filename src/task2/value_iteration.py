@@ -153,7 +153,8 @@ while True:
                 delta_theory=delta_theory,
                 econ=e,
                 P_intl=80,
-                a_prev=0
+                a_prev=0,
+                lambda_sparse=0.05
             )
 
             # =============================

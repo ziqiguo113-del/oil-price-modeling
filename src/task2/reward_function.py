@@ -32,9 +32,9 @@ def calculate_reward(
     delta_theory,
     econ,
     P_intl,
-    a_prev
+    a_prev,
+    lambda_sparse=0
 ):
-
     """
     Final stable MDP reward function
     """
@@ -97,7 +97,11 @@ def calculate_reward(
     # =====================================
     # total loss
     # =====================================
-
+    sparsity_loss = (
+        lambda_sparse
+        * abs(a)
+        / 500
+    )
     total_loss = (
 
         WEIGHTS[0] * L_consumer
@@ -105,6 +109,7 @@ def calculate_reward(
         + WEIGHTS[2] * L_inflation
         + WEIGHTS[3] * L_volatility
         + WEIGHTS[4] * L_security
+        + sparsity_loss
     )
 
     # =====================================
